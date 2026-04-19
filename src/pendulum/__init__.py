@@ -286,7 +286,15 @@ def from_timestamp(timestamp: int | float, tz: str | Timezone = UTC) -> DateTime
     """
     Create a DateTime instance from a timestamp.
     """
-    dt = _datetime.datetime.fromtimestamp(timestamp, tz=UTC)
+    try:
+        dt = _datetime.datetime.fromtimestamp(timestamp, tz=UTC)
+    except OSError:
+        # On some platforms (notably Windows), datetime.fromtimestamp
+        # raises OSError for negative timestamps that are too far from
+        # the Unix epoch.  Fall back to computing the result from the
+        # epoch and applying the offset manually.
+        epoch = _datetime.datetime(1970, 1, 1, tzinfo=UTC)
+        dt = epoch + _datetime.timedelta(seconds=timestamp)
 
     dt = datetime(
         dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, dt.microsecond
