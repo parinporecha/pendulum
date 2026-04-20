@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import datetime as datetime_
+
 import pendulum
+import pytest
 
 from pendulum import timezone
 from tests.conftest import assert_datetime
@@ -25,28 +28,38 @@ def test_create_from_timestamp_with_timezone():
 
 
 def test_create_from_timestamp_negative():
-    """Negative timestamps earlier than 12h before the Unix epoch should work.
-
-    Regression test for issue 956: on Windows (and potentially other
-    platforms), datetime.fromtimestamp raises OSError for timestamps
-    below a platform-specific minimum.  pendulum should still return a
-    correct DateTime.
-    """
-    # -43201 is 1 second past the 12h-before-epoch boundary reported in the issue
     d = pendulum.from_timestamp(-43201)
     assert_datetime(d, 1969, 12, 31, 11, 59, 59)
     assert d.timezone_name == "UTC"
 
 
 def test_create_from_timestamp_negative_with_timezone():
-    """Negative timestamps with an explicit timezone should also work."""
     d = pendulum.from_timestamp(-43201, "America/Toronto")
     assert d.timezone_name == "America/Toronto"
     assert_datetime(d, 1969, 12, 31, 6, 59, 59)
 
 
 def test_create_from_timestamp_negative_with_microseconds():
-    """Negative float timestamps preserving microseconds."""
     d = pendulum.from_timestamp(-43201.5)
     assert_datetime(d, 1969, 12, 31, 11, 59, 58, 500000)
+    assert d.timezone_name == "UTC"
+
+
+@pytest.mark.parametrize("exception_type", [OSError, OverflowError])
+def test_create_from_timestamp_falls_back_for_negative_timestamp(
+    monkeypatch, exception_type
+):
+    class FakeDateTime(datetime_.datetime):
+        @classmethod
+        def fromtimestamp(cls, timestamp: float, tz: datetime_.tzinfo | None = None):
+            if timestamp == -43201:
+                raise exception_type("Invalid argument")
+
+            return super().fromtimestamp(timestamp, tz=tz)
+
+    monkeypatch.setattr(pendulum._datetime, "datetime", FakeDateTime)
+
+    d = pendulum.from_timestamp(-43201)
+
+    assert_datetime(d, 1969, 12, 31, 11, 59, 59)
     assert d.timezone_name == "UTC"

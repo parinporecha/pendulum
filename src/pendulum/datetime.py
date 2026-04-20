@@ -1255,7 +1255,7 @@ class DateTime(datetime.datetime, Date):
 
         try:
             dt = datetime.datetime.fromtimestamp(t, tz=tzinfo)
-        except OSError:
+        except (OSError, OverflowError):
             dt = (cls._EPOCH + datetime.timedelta(seconds=t)).astimezone(tzinfo)
 
         return cls.instance(dt, tz=tzinfo)
@@ -1264,7 +1264,9 @@ class DateTime(datetime.datetime, Date):
     def utcfromtimestamp(cls, t: float) -> Self:
         try:
             dt = datetime.datetime.utcfromtimestamp(t)
-        except OSError:
+        except (OSError, OverflowError):
+            # Match datetime.datetime.utcfromtimestamp(), which returns a
+            # naive datetime representing UTC.
             dt = datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds=t)
 
         return cls.instance(dt, tz=None)

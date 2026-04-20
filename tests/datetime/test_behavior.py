@@ -6,6 +6,8 @@ import pickle
 import types
 import zoneinfo
 
+import pytest
+
 from copy import deepcopy
 from datetime import date
 from datetime import datetime
@@ -110,14 +112,15 @@ def test_utcfromtimestamp():
     assert p == dt
 
 
-def test_fromtimestamp_falls_back_for_negative_timestamp(monkeypatch):
+@pytest.mark.parametrize("exception_type", [OSError, OverflowError])
+def test_fromtimestamp_falls_back_for_negative_timestamp(monkeypatch, exception_type):
     pendulum_datetime_module = importlib.import_module("pendulum.datetime")
 
     class FakeDateTime(datetime_.datetime):
         @classmethod
         def fromtimestamp(cls, t: float, tz: datetime_.tzinfo | None = None):
             if t == -43201:
-                raise OSError("Invalid argument")
+                raise exception_type("Invalid argument")
 
             return super().fromtimestamp(t, tz=tz)
 
@@ -133,14 +136,15 @@ def test_fromtimestamp_falls_back_for_negative_timestamp(monkeypatch):
     assert p.timezone_name == "UTC"
 
 
-def test_utcfromtimestamp_falls_back_for_negative_timestamp(monkeypatch):
+@pytest.mark.parametrize("exception_type", [OSError, OverflowError])
+def test_utcfromtimestamp_falls_back_for_negative_timestamp(monkeypatch, exception_type):
     pendulum_datetime_module = importlib.import_module("pendulum.datetime")
 
     class FakeDateTime(datetime_.datetime):
         @classmethod
         def utcfromtimestamp(cls, t: float):
             if t == -43201:
-                raise OSError("Invalid argument")
+                raise exception_type("Invalid argument")
 
             return super().utcfromtimestamp(t)
 

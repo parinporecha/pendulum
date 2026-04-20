@@ -288,11 +288,7 @@ def from_timestamp(timestamp: int | float, tz: str | Timezone = UTC) -> DateTime
     """
     try:
         dt = _datetime.datetime.fromtimestamp(timestamp, tz=UTC)
-    except OSError:
-        # On some platforms (notably Windows), datetime.fromtimestamp
-        # raises OSError for negative timestamps that are too far from
-        # the Unix epoch.  Fall back to computing the result from the
-        # epoch and applying the offset manually.
+    except (OSError, OverflowError):
         epoch = _datetime.datetime(1970, 1, 1, tzinfo=UTC)
         dt = epoch + _datetime.timedelta(seconds=timestamp)
 
