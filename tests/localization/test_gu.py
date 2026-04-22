@@ -67,3 +67,10 @@ def diff_for_humans():
 
     assert d.diff_for_humans(d2, True, locale=locale) == "અમુક સેકંડ"
     assert d2.diff_for_humans(d.add(seconds=1), True, locale=locale) == "અમુક સેકંડ"
+
+
+def test_format():
+    d = pendulum.datetime(2016, 8, 29, 7, 3, 6, 123456)
+    assert d.format("dddd", locale=locale) == "સોમવાર"
+    assert d.format("ddd", locale=locale) == "સોમ"
+    assert d.format("dd", locale=locale) == "સો"
